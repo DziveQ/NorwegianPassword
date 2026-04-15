@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PassordMaskin — Norske passord</title>
+  <meta name="description" content="Generer sterke, minnevennlige passord med norske ord">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0c29 0%, #1a1a3e 35%, #24243e 65%, #0f0c29 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 60px;
+      font-family: 'Outfit', 'Segoe UI', sans-serif;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Ambient orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .orb--blue {
+      top: -20%; left: -10%; width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(96,165,250,0.12) 0%, transparent 70%);
+      filter: blur(60px);
+    }
+    .orb--purple {
+      bottom: -20%; right: -10%; width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(167,139,250,0.10) 0%, transparent 70%);
+      filter: blur(80px);
+    }
+    .orb--green {
+      top: 40%; right: 20%; width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 70%);
+      filter: blur(50px);
+    }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 36px; position: relative; z-index: 1; }
+    .header svg { margin-bottom: 12px; }
+    .header h1 {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0 0 8px;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .header p {
+      color: rgba(255,255,255,0.45);
+      font-size: 15px;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+
+    /* Format badge */
+    .format-badge {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 100px;
+      padding: 8px 20px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: relative;
+      z-index: 1;
+    }
+    .format-badge .label { color: rgba(255,255,255,0.35); font-size: 13px; font-weight: 400; }
+    .format-badge code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .c-blue { color: #60a5fa; }
+    .c-purple { color: #a78bfa; }
+    .c-green { color: #34d399; }
+    .c-yellow { color: #fbbf24; }
+
+    /* Glass card */
+    .glass-card {
+      width: 100%;
+      max-width: 520px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 8px;
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Password row */
+    .pw-list { display: flex; flex-direction: column; gap: 4px; }
+
+    .pw-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid transparent;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .pw-row:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.1);
+    }
+    .pw-row.copied {
+      background: rgba(52,211,153,0.08);
+      border-color: rgba(52,211,153,0.2);
+    }
+
+    .pw-num {
+      color: rgba(255,255,255,0.15);
+      font-size: 12px;
+      font-weight: 500;
+      width: 18px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .pw-text {
+      flex: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(15px, 3.5vw, 18px);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .pw-text.generating { opacity: 0.3; }
+
+    /* Strength bar */
+    .strength-track {
+      width: 40px; height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      opacity: 0.7;
+      transition: width 0.3s ease;
+    }
+
+    /* Icon buttons */
+    .icon-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.2);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover {
+      color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.05);
+    }
+    .icon-btn.copied-btn { color: #34d399; }
+
+    /* Generate button */
+    .gen-btn {
+      margin-top: 24px;
+      padding: 14px 36px;
+      border-radius: 16px;
+      border: 1px solid rgba(96,165,250,0.2);
+      background: rgba(96,165,250,0.08);
+      color: #60a5fa;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: relative;
+      z-index: 1;
+    }
+    .gen-btn:hover {
+      background: rgba(96,165,250,0.15);
+      border-color: rgba(96,165,250,0.35);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px rgba(96,165,250,0.15);
+    }
+
+    /* Tip */
+    .tip {
+      margin-top: 24px;
+      color: rgba(255,255,255,0.2);
+      font-size: 13px;
+      font-weight: 300;
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* History */
+    .history { margin-top: 32px; width: 100%; max-width: 520px; position: relative; z-index: 1; display: none; }
+    .history.visible { display: block; }
+    .history-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .history-label {
+      color: rgba(255,255,255,0.2);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .history-line { flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
+    .history-items { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .history-chip {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 6px 12px;
+      color: rgba(255,255,255,0.35);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .history-chip:hover {
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient orbs -->
+  <div class="orb orb--blue"></div>
+  <div class="orb orb--purple"></div>
+  <div class="orb orb--green"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#shieldGrad)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <defs>
+        <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#60a5fa"/>
+          <stop offset="100%" stop-color="#a78bfa"/>
+        </linearGradient>
+      </defs>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      <path d="M9 12l2 2 4-4" stroke="url(#shieldGrad)" stroke-width="2"/>
+    </svg>
+    <h1>PassordMaskin</h1>
+    <p>Sterke, minnevennlige passord</p>
+  </div>
+
+  <!-- Format badge -->
+  <div class="format-badge">
+    <span class="label">Format:</span>
+    <code class="c-blue">Ord</code>
+    <code class="c-purple">Ord</code>
+    <code class="c-green">00</code>
+    <code class="c-yellow">!</code>
+  </div>
+
+  <!-- Main card -->
+  <div class="glass-card">
+    <div class="pw-list" id="pwList"></div>
+  </div>
+
+  <!-- Generate button -->
+  <button class="gen-btn" id="genBtn" onclick="regenerateAll()">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="23 4 23 10 17 10"/>
+      <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+    </svg>
+    Generer nye passord
+  </button>
+
+  <!-- Tip -->
+  <p class="tip">Klikk et passord for å kopiere. Hvert passord kombinerer to norske ord, to siffer og et utropstegn.</p>
+
+  <!-- History -->
+  <div class="history" id="historySection">
+    <div class="history-header">
+      <span class="history-label">Nylig kopiert</span>
+      <div class="history-line"></div>
+    </div>
+    <div class="history-items" id="historyItems"></div>
+  </div>
+
+<script>
+const WORDS = [
+  "Glass","Eske","Bade","Boks","Fjell","Skog","Elv","Hav","Sol","Ild",
+  "Storm","Regn","Furu","Gran","Ulv","Rev","Falk","Torsk","Laks","Krabbe",
+  "Hval","Sel","Rein","Elg","Hest","Sau","Geit","Katt","Hund","Mus",
+  "Penn","Stol","Bord","Lampe","Vindu","Tak","Gulv","Vegg","Trapp","Hytte",
+  "Ski","Spark","Slede","Sykkel","Bil","Buss","Tog","Fly","Skip","Bro",
+  "Vei","Sti","Berg","Topp","Dal","Bekk","Foss","Tjern","Bukt","Holme",
+  "Strand","Sand","Stein","Mose","Lyng","Rose","Tulip","Korn","Rug","Havre",
+  "Bygg","Hvete","Eple","Plomme","Ost","Melk","Kaffe","Kakao","Safran","Kanel",
+  "Pepper","Salt","Sukker","Honning","Vaffel","Bolle","Kake","Lefse","Brunost","Vin",
+  "Krone","Flagg","Troll","Nisse","Hulder","Draug","Fjord","Vidde","Bre","Morene",
+  "Aurora","Nordlys","Midnatt","Sommer","Vinter","Frost","Hagl","Flamme","Gnist","Damp",
+  "Aske","Kull","Jern","Kobber","Gull","Perle","Diamant","Safir","Rubin","Krystall",
+  "Marmor","Granitt","Skifer","Tegl","Betong","Planke","Stav","Bolt","Spiker","Hammer",
+  "Sag","Kniv","Plog","Rive","Spade","Kurv","Sekk","Pose","Kasse","Flaske",
+  "Kopp","Panne","Ovn","Kjede","Ring","Medalje","Pokal","Tavle","Kritt","Svamp",
+  "Blyant","Linjal","Passer","Atlas","Kart","Kompass","Kikkert","Lupe","Prisme","Linse",
+  "Speil","Ramme","Lerret","Pensel","Maling","Tusj","Blekk","Papir","Pakke","Tau",
+  "Seil","Anker","Motor","Propell","Ratt","Pedal","Bremse","Hjul","Dekk","Felg",
+  "Ventil","Pumpe","Slange","Kran","Tank","Stige","Bjelke","Klokke","Rute","Blink",
+  "Pilot","Laser","Radar","Sonar","Signal","Kabler","Tiger","Panter","Drage","Viktig"
+];
+
+let passwords = [];
+let copiedIdx = null;
+let copyTimeout = null;
+let history = [];
+
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function generate() {
+  const w1 = rand(WORDS);
+  let w2 = rand(WORDS);
+  while (w2 === w1) w2 = rand(WORDS);
+  const digits = String(Math.floor(Math.random() * 90) + 10);
+  return w1 + w2 + digits + "!";
+}
+
+function parsePassword(pw) {
+  const withoutEnd = pw.replace(/\d+!$/, "");
+  let split = 0;
+  for (let i = 1; i < withoutEnd.length; i++) {
+    const ch = withoutEnd[i];
+    if (ch >= "A" && ch <= "Z") { split = i; break; }
+  }
+  const w1 = withoutEnd.slice(0, split);
+  const w2 = withoutEnd.slice(split);
+  const tail = pw.slice(withoutEnd.length);
+  const digits = tail.replace("!", "");
+  return [
+    { text: w1, cls: "c-blue" },
+    { text: w2, cls: "c-purple" },
+    { text: digits, cls: "c-green" },
+    { text: "!", cls: "c-yellow" },
+  ];
+}
+
+function getStrength(pw) {
+  const len = pw.length;
+  if (len >= 16) return { color: "#34d399", width: "100%" };
+  if (len >= 12) return { color: "#60a5fa", width: "75%" };
+  return { color: "#fbbf24", width: "50%" };
+}
+
+function copyToClipboard(pw, idx) {
+  navigator.clipboard.writeText(pw).then(() => {
+    copiedIdx = idx;
+    // Add to history
+    history = [pw, ...history.filter(h => h !== pw)].slice(0, 10);
+    renderAll();
+    if (copyTimeout) clearTimeout(copyTimeout);
+    copyTimeout = setTimeout(() => { copiedIdx = null; renderAll(); }, 2000);
+  });
+}
+
+function regenerateOne(idx, e) {
+  e.stopPropagation();
+  passwords[idx] = generate();
+  renderAll();
+}
+
+function regenerateAll() {
+  passwords = Array.from({ length: 5 }, generate);
+  copiedIdx = null;
+  renderAll();
+}
+
+function renderAll() {
+  const list = document.getElementById("pwList");
+  list.innerHTML = "";
+
+  passwords.forEach((pw, i) => {
+    const parts = parsePassword(pw);
+    const strength = getStrength(pw);
+    const isCopied = copiedIdx === i;
+
+    const row = document.createElement("div");
+    row.className = "pw-row" + (isCopied ? " copied" : "");
+    row.onclick = () => copyToClipboard(pw, i);
+
+    // Number
+    const num = document.createElement("span");
+    num.className = "pw-num";
+    num.textContent = i + 1;
+    row.appendChild(num);
+
+    // Password text
+    const text = document.createElement("div");
+    text.className = "pw-text";
+    parts.forEach(p => {
+      const s = document.createElement("span");
+      s.className = p.cls;
+      s.textContent = p.text;
+      text.appendChild(s);
+    });
+    row.appendChild(text);
+
+    // Strength bar
+    const track = document.createElement("div");
+    track.className = "strength-track";
+    const fill = document.createElement("div");
+    fill.className = "strength-fill";
+    fill.style.width = strength.width;
+    fill.style.background = strength.color;
+    track.appendChild(fill);
+    row.appendChild(track);
+
+    // Refresh button
+    const refreshBtn = document.createElement("button");
+    refreshBtn.className = "icon-btn";
+    refreshBtn.title = "Generer nytt";
+    refreshBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>';
+    refreshBtn.onclick = (e) => regenerateOne(i, e);
+    row.appendChild(refreshBtn);
+
+    // Copy button
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "icon-btn" + (isCopied ? " copied-btn" : "");
+    copyBtn.title = "Kopier";
+    if (isCopied) {
+      copyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    } else {
+      copyBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+    }
+    copyBtn.onclick = (e) => { e.stopPropagation(); copyToClipboard(pw, i); };
+    row.appendChild(copyBtn);
+
+    list.appendChild(row);
+  });
+
+  // History
+  const historySection = document.getElementById("historySection");
+  const historyItems = document.getElementById("historyItems");
+  if (history.length > 0) {
+    historySection.classList.add("visible");
+    historyItems.innerHTML = "";
+    history.forEach(h => {
+      const chip = document.createElement("button");
+      chip.className = "history-chip";
+      chip.textContent = h;
+      chip.onclick = () => navigator.clipboard.writeText(h);
+      historyItems.appendChild(chip);
+    });
+  } else {
+    historySection.classList.remove("visible");
+  }
+}
+
+// Init
+regenerateAll();
+</script>
+</body>
+</html>
