@@ -2,32 +2,93 @@ import { useState, useCallback, useMemo, useRef } from "react";
 
 /* ---------------- Ordlister ---------------- */
 const WORD_CATEGORIES = {
-  natur: {
-    label: "Natur",
-    words: ["Fjell","Skog","Elv","Hav","Sol","Måne","Stjerne","Himmel","Sky","Regn","Snø","Is","Frost","Vind","Storm","Torden","Lyn","Regnbue","Dugg","Skodde","Tåke","Bre","Fjord","Vidde","Dal","Ås","Berg","Klippe","Foss","Bekk","Innsjø","Tjern","Kilde","Kyst","Strand","Sand","Stein","Grus","Fjære","Bukt","Holme","Øy","Skjær","Odde","Nes","Vik","Tind","Skar","Morene","Myr","Mose","Lyng","Bjørk","Furu","Gran","Eik","Bøk","Selje","Rogn","Osp","Einer","Vier","Lund","Eng","Slette","Åker","Mark","Bølge","Tidevann","Strøm","Virvel","Nordlys","Midnattssol","Polarnatt","Vinter","Vår","Sommer","Høst","Lauvfall","Solnedgang","Soloppgang","Skumring","Demring","Måneskinn","Melkeveien","Komet","Meteor","Vulkan","Geysir","Grotte","Hule","Canyon","Ørken","Savanne","Jungel","Prærie","Tundra","Isbre","Snøfonn","Rasmark","Fjellrygg"]
-  },
-  dyr: {
-    label: "Dyr",
-    words: ["Ulv","Rev","Bjørn","Gaupe","Jerv","Elg","Hjort","Rådyr","Rein","Villsvin","Hare","Ekorn","Grevling","Oter","Mår","Rotte","Mus","Pinnsvin","Flaggermus","Hest","Ku","Sau","Geit","Gris","Katt","Hund","Kanin","Marsvin","Hamster","Falk","Ørn","Ugle","Kråke","Ravn","Måke","Svale","Spurv","Trost","Skjære","Stær","Gås","And","Svane","Tjeld","Lom","Skarv","Rype","Orrfugl","Storfugl","Tiur","Hane","Høne","Kalkun","Torsk","Laks","Ørret","Røye","Sild","Makrell","Krabbe","Hummer","Reke","Blåskjell","Østers","Kveite","Uer","Lange","Sei","Brosme","Hval","Sel","Nise","Spekkhogger","Delfin","Hai","Rokke","Tiger","Løve","Panter","Elefant","Sjiraff","Sebra","Flodhest","Neshorn","Ape","Papegøye","Struts","Pingvin","Kenguru","Koala","Krokodille","Slange","Øgle","Skilpadde","Frosk","Padde","Salamander","Edderkopp","Sommerfugl","Bille","Maur","Bie","Humle","Veps","Flue","Mygg"]
-  },
-  mat: {
-    label: "Mat",
-    words: ["Brød","Loff","Rundstykke","Lefse","Lompe","Smør","Ost","Brunost","Gulost","Melk","Rømme","Fløte","Yoghurt","Egg","Bacon","Pølse","Kjøttdeig","Karbonade","Kjøttkake","Fårikål","Pinnekjøtt","Lutefisk","Rakfisk","Gravlaks","Fiskekake","Fiskepudding","Kaviar","Poteter","Gulrot","Kålrot","Neper","Løk","Hvitløk","Purre","Kål","Blomkål","Brokkoli","Erter","Bønner","Mais","Ris","Pasta","Makaroni","Havregryn","Müsli","Knekkebrød","Kjeks","Kake","Bolle","Vaffel","Pannekake","Krem","Sjokolade","Karamell","Marsipan","Nøtter","Mandler","Rosiner","Eple","Pære","Plomme","Kirsebær","Bringebær","Jordbær","Blåbær","Tyttebær","Multer","Rips","Solbær","Banan","Appelsin","Sitron","Lime","Ananas","Mango","Melon","Drue","Fiken","Kaffe","Te","Kakao","Saft","Brus","Juice","Vin","Øl","Sider","Honning","Sukker","Salt","Pepper","Kanel","Kardemomme","Vaniljesukker","Safran","Muskat","Ingefær","Karve","Dill","Persille","Basilikum","Timian"]
-  },
-  farger: {
-    label: "Farger",
-    words: ["Rød","Blå","Grønn","Gul","Oransje","Rosa","Lilla","Fiolett","Turkis","Cyan","Magenta","Brun","Beige","Grå","Svart","Hvit","Sølv","Gull","Bronse","Kobber","Marineblå","Himmelblå","Havblå","Lyseblå","Mørkeblå","Skarlagen","Karmosin","Burgunder","Lyserosa","Oliven","Smaragd","Jade","Safirblå","Rubinrød","Ravgul","Kremhvit","Elfenben","Perlemor"]
-  },
-  objekter: {
-    label: "Objekter",
-    words: ["Bok","Penn","Blyant","Viskelær","Linjal","Passer","Saks","Lim","Tape","Papir","Konvolutt","Stempel","Kalender","Notatbok","Skrivebord","Stol","Sofa","Bord","Hylle","Skap","Seng","Pute","Teppe","Gardiner","Lampe","Lysestake","Speil","Bilderamme","Vase","Krukke","Skål","Tallerken","Kopp","Glass","Kanne","Gryte","Panne","Kjele","Ovn","Komfyr","Kjøleskap","Fryser","Vaskemaskin","Støvsuger","Strykejern","Klokke","Kalkulator","Telefon","Datamaskin","Skjerm","Tastatur","Skriver","Kamera","Radio","Høyttaler","Hodetelefoner","Lommelykt","Batteri","Nøkkel","Lås","Dør","Vindu","Trapp","Tak","Gulv","Vegg","Pipe","Bro","Vei","Sti","Gjerde","Port","Hage","Balkong","Terrasse","Garasje","Skur","Låve","Fjøs","Brønn","Sykkel","Bil","Motorsykkel","Buss","Tog","Fly","Skip","Båt","Kano","Kajakk","Ski","Skøyter","Slede","Ball","Racket","Nett","Vekt","Termometer","Kikkert","Kompass","Lykt","Ryggsekk"]
-  },
-  adjektiv: {
-    label: "Adjektiv",
-    words: ["Stor","Liten","Rask","Sakte","Sterk","Svak","Varm","Kald","Lys","Mørk","Glad","Trist","Snill","Sint","Klok","Modig","Rolig","Vill","Tam","Myk","Hard","Tung","Lett","Høy","Lav","Bred","Smal","Dyp","Grunn","Tykk","Tynn","Ny","Gammel","Ung","Frisk","Rik","Vakker","Ren","Tørr","Våt","Fri","Trygg","Stille","Skarp","Sløv","Hurtig","Treg","Klar","Uklar","Sunn","Enkel","Vanskelig","Morsom","Kjedelig"]
-  }
+natur: {
+label: "Natur",
+words: [
+"Sol", "Vind", "Storm", "Lyn", "Frost", "Is",
+"Fjell", "Skog", "Elv", "Hav", "Dal", "Foss",
+"Bekk", "Tjern", "Strand", "Sand", "Stein", "Kyst",
+"Vik", "Bukt", "Nes", "Holme", "Fjord", "Berg",
+"Tre", "Blad", "Gren", "Rot", "Bark", "Kongle",
+"Gress", "Blomst", "Busk", "Eng", "Jord", "Mose",
+"Sopp", "Furu", "Gran", "Eik", "Himmel", "Stjerne"
+]
+},
+ 
+dyr: {
+label: "Dyr",
+words: [
+"Ulv", "Rev", "Gaupe", "Jerv", "Elg", "Hjort",
+"Rein", "Hare", "Ekorn", "Oter", "Mus", "Bever",
+"Hest", "Ku", "Sau", "Geit", "Gris", "Katt",
+"Hund", "Kanin", "Hamster", "Esel", "Kalv", "Lam",
+"Valp", "Falk", "Ugle", "Ravn", "Svale", "Spurv",
+"Trost", "And", "Svane", "Rype", "Torsk", "Laks",
+"Sild", "Hai", "Sel", "Hval", "Delfin", "Tiger",
+"Elefant", "Sebra", "Ape", "Panda", "Pingvin",
+"Frosk", "Snegle", "Maur", "Bie", "Humle"
+]
+},
+ 
+mat: {
+label: "Mat",
+words: [
+"Loff", "Lefse", "Lompe", "Ost", "Melk", "Egg",
+"Bacon", "Skinke", "Kylling", "Kaviar", "Potet",
+"Gulrot", "Agurk", "Tomat", "Paprika", "Salat",
+"Spinat", "Mais", "Erter", "Ris", "Pasta",
+"Makaroni", "Nudler", "Suppe", "Pizza", "Taco",
+"Burger", "Kjeks", "Kake", "Bolle", "Vaffel",
+"Pannekake", "Iskrem", "Sjokolade", "Karamell",
+"Eple", "Banan", "Appelsin", "Sitron", "Lime",
+"Mango", "Melon", "Drue", "Kiwi", "Kaffe", "Te",
+"Kakao", "Saft", "Brus", "Juice", "Honning",
+"Sukker", "Salt", "Pepper", "Kanel"
+]
+},
+ 
+farger: {
+label: "Farger",
+words: [
+"Gul", "Rosa", "Lilla", "Oransje", "Brun",
+"Beige", "Svart", "Hvit", "Turkis", "Fiolett",
+"Burgunder", "Korall", "Oliven", "Kremhvit",
+"Sitrongul", "Laksrosa"
+]
+},
+ 
+objekter: {
+label: "Objekter",
+words: [
+"Bok", "Penn", "Blyant", "Linjal", "Saks",
+"Papir", "Lim", "Tape", "Bord", "Stol",
+"Sofa", "Seng", "Pute", "Teppe", "Hylle",
+"Skap", "Lampe", "Speil", "Vase", "Kopp",
+"Glass", "Skje", "Kniv", "Gaffel", "Flaske",
+"Boks", "Pose", "Kurv", "Klokke", "Telefon",
+"Skjerm", "Tastatur", "Kamera", "Radio",
+"Batteri", "Kabel", "Nøkkel", "Dør", "Vindu",
+"Trapp", "Sykkel", "Bil", "Buss", "Tog",
+"Fly", "Båt", "Ball", "Jakke", "Genser",
+"Bukse", "Sokker", "Sko", "Lue", "Belte"
+]
+},
+ 
+adjektiv: {
+label: "Adjektiv",
+words: [
+"Stor", "Liten", "Rask", "Sterk", "Svak",
+"Varm", "Kald", "Lys", "Glad", "Trist",
+"Snill", "Sint", "Klok", "Modig", "Rolig",
+"Vill", "Tam", "Myk", "Hard", "Tung",
+"Lett", "Lav", "Bred", "Smal", "Dyp",
+"Tykk", "Tynn", "Ny", "Gammel", "Ung",
+"Frisk", "Fin", "Pen", "Ren", "Fri",
+"Trygg", "Kort", "Lang", "Rund", "Flat",
+"Tom", "Full", "Fast", "Blank", "Mild"
+]
+}
 };
-
 const SEPARATORS = [
   { id: "none", label: "Ingen", value: "" },
   { id: "dash", label: "-", value: "-" },
